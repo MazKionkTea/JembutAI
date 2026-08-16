@@ -33,9 +33,9 @@ except Exception:
     _DEFAULT_THREADS = 4
 
 DEFAULT_CONFIG: Dict = {
-    "max_tokens": 256,
-    "temperature": 0.6,
-    "top_p": 0.9,
+    "max_tokens": 1024,
+    "temperature": 0.2,
+    "top_p": 0.95,
     "top_k": 40,
     "repeat_penalty": 1.1,
     "n_ctx": 1024,
