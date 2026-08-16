@@ -13,22 +13,21 @@ from flask_cors import CORS
 # Tambahkan parent path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from config import config
+from konfigurasi import konfigurasi
 from llm.loader import LLMLoader
 from llm.inference import InferenceEngine
 from llm.prompt import PromptTemplates
-from agent.memory import MemoryManager
-from agent.context import ContextManager
-from agent.planner import Planner
-from agent.executor import Executor
-from agent.agent import AIAgent
+from agen.memori import PengelolaMemori
+from agen.konteks import PengelolaKonteks
+from agen.perencana import perencana
+from agen.eksekutor import eksekutor
+from agen.agen import AgentAI
 from mcp.filesystem_server import FileSystemServer
 from mcp.sqlite_server import SQLiteServer
 from mcp.api_server import APIServer
 from mcp.launcher import MCPLauncher
 from tools.files import FileTools
 from tools.sqlite import SQLiteTools
-from tools.weather import WeatherTools
 from tools.shell import ShellTools
 
 # RAG Components
