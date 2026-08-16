@@ -5,10 +5,13 @@ Index dokumen ke ChromaDB
 
 import sys
 from pathlib import Path
+
+# Tambahkan root workspace ke path
 sys.path.insert(0, str(Path(__file__).parent))
 
-from config import config
-from rag import Embedder, Indexer
+# Import langsung dari root (karena file-file RAG ada di root workspace)
+from embedder import Embedder
+from indexer import Indexer
 
 
 def index_documents():
@@ -16,7 +19,9 @@ def index_documents():
     print("📚 Indexing documents...")
     
     # Cek model embedding
-    embed_model_path = config.MODELS_DIR / "nomic-embed-text-v2-moe.Q5_K_M.gguf"
+    models_dir = Path(__file__).parent / "models"
+    embed_model_path = models_dir / "nomic-embed-text-v2-moe.Q5_K_M.gguf"
+
     
     # Embedder
     embedder = Embedder(
