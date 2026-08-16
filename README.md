@@ -709,3 +709,16 @@ Arsitektur ini dirancang untuk **skalabilitas**, **modularitas**, dan **keamanan
 2. Setup CI/CD pipeline untuk automated testing dan deployment
 3. Dokumentasi API untuk setiap endpoint
 4. Performance benchmarking untuk optimasi lebih lanjut
+
+**Dependencies Utama:**
+- llama-cpp-python >=0.2.90 - untuk LLM inference engine
+- chromadb >=0.4.22 - untuk vector database RAG
+- flask >=3.0.0 - untuk web framework UI
+- flask-cors >=4.0.0 - untuk CORS support
+- python-dotenv >=1.0.0 - untuk load environment variables
+
+**Optional Dependencies (terkomentari):**
+- pytest, pytest-cov - untuk testing
+- black - untuk formatting
+- flake8 - untuk linting
+- mypy - untuk type checking
