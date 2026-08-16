@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jembut DarkMind AI - LLM Interface</title>
+    
+    <!-- CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link id="hljs-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap">
+    
+    <!-- JavaScript Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+<!-- Overlay for Mobile Sidebar -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+
+<div class="app-container" id="appContainer">
+    <button class="sidebar-toggle" onclick="toggleSidebar()">
+        <i class="fas fa-bars" id="toggleIcon"></i>
+    </button>
+
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="user-profile">
+            <div class="user-avatar">P</div>
+            <div class="user-name">Peler</div>
+            <div class="user-role">CyberSec Analyst</div>
+            <div class="user-status"><span class="status-dot"></span> Pro Member Online</div>
+            <div class="ip-display" id="ipAddressDisplay" title="Copy IP">
+                <i class="fas fa-network-wired"></i> <span>Detecting...</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <button class="nav-item btn-new-chat" onclick="startNewChat()">
+                <i class="fas fa-plus"></i> New Chat
+            </button>
+
+            <div class="nav-section">
+                <div class="nav-section-title">MCP</div>
+                <div class="nav-item" onclick="toggleMCP()">
+                    <i class="fas fa-robot"></i> MCP <i class="fas fa-chevron-down" id="agentChevron" style="margin-left:auto; font-size:10px;"></i>
+                </div>
+                <div class="agent-skills" id="agentSkills">
+                    <div class="skill-tag selected" onclick="selectMCP(this)"><i class="fas fa-shield-alt"></i> MCP 1</div>
+                    <div class="skill-tag" onclick="selectMCP(this)"><i class="fas fa-code"></i> MCP 2</div>
+                    <div class="skill-tag" onclick="selectMCP(this)"><i class="fas fa-bug"></i> MCP 3</div>
+                    <div class="skill-tag" onclick="selectMCP(this)"><i class="fas fa-search"></i> MCP 4</div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Agents</div>
+                <div class="nav-item" onclick="toggleAgentSkills()">
+                    <i class="fas fa-robot"></i> Agents <i class="fas fa-chevron-down" id="agentChevron2" style="margin-left:auto; font-size:10px;"></i>
+                </div>
+                <div class="agent-skills" id="agentSkills2">
+                    <div class="skill-tag selected" onclick="selectAgents(this)"><i class="fas fa-shield-alt"></i> Cyber Security</div>
+                    <div class="skill-tag" onclick="selectAgents(this)"><i class="fas fa-code"></i> Programer</div>
+                    <div class="skill-tag" onclick="selectAgents(this)"><i class="fas fa-bug"></i> Enginer</div>
+                    <div class="skill-tag" onclick="selectAgents(this)"><i class="fas fa-search"></i> Electric</div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Skill</div>
+                <div class="nav-item" onclick="toggleSkillSkills()">
+                    <i class="fas fa-robot"></i> Skill <i class="fas fa-chevron-down" id="skillChevron" style="margin-left:auto; font-size:10px;"></i>
+                </div>
+                <div class="agent-skills" id="skillSkills">
+                    <div class="skill-tag selected" onclick="selectSkill(this)"><i class="fas fa-shield-alt"></i> Cyber Security</div>
+                    <div class="skill-tag" onclick="selectSkill(this)"><i class="fas fa-code"></i> Code Review</div>
+                    <div class="skill-tag" onclick="selectSkill(this)"><i class="fas fa-bug"></i> Bug Bounty</div>
+                    <div class="skill-tag" onclick="selectSkill(this)"><i class="fas fa-search"></i> OSINT</div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">Projects</div>
+                <div class="nav-item" onclick="toggleProjects()">
+                    <i class="fas fa-folder"></i> Projects <i class="fas fa-chevron-down" id="projectChevron" style="margin-left:auto; font-size:10px;"></i>
+                </div>
+                <div class="projects-list" id="projectsList">
+                    <div class="project-item">HTB Academy Labs</div>
+                    <div class="project-item">CTF Writeups</div>
+                    <div class="project-item">Malware Analysis</div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">History</div>
+                <div id="historyList">
+                    <div style="padding: 12px; color: var(--text-muted); font-size: 12px; text-align: center;">Loading...</div>
+                </div>
+            </div>
+
+            <div class="nav-section">
+                <div class="nav-section-title">System</div>
+                <div class="nav-item" onclick="toggleSettings()">
+                    <i class="fas fa-cog"></i> Settings <i class="fas fa-chevron-down" id="settingsChevron" style="margin-left:auto; font-size:10px;"></i>
+                </div>
+                <div class="settings-panel" id="settingsPanel">
+                    <div class="setting-item">Auto-save Chat <div class="toggle-switch active" onclick="toggleSwitch(this)"></div></div>
+                    <div class="setting-item">Sound Effects <div class="toggle-switch" onclick="toggleSwitch(this)"></div></div>
+                    <div class="setting-item">Stream Response <div class="toggle-switch active" onclick="toggleSwitch(this)"></div></div>
+                    <div class="setting-item">Use RAG <div class="toggle-switch active" onclick="toggleRAG(this)"></div></div>
+                </div>
+            </div>
+        </nav>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <main class="main-content">
+        <header class="main-header">
+            <div class="header-left">
+                <div class="app-logo"><i class="fas fa-terminal"></i> Jembut DarkMind AI</div>
+                <div class="app-tagline">Advanced LLM Interface</div>
+            </div>
+            <div class="header-right">
+                <button class="header-btn" id="tempChatBtn" onclick="toggleTempChat()" title="Temporary Chat">
+                    <i class="fas fa-user-secret"></i>
+                </button>
+                <button class="header-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle Theme">
+                    <i class="fas fa-moon" id="themeIcon"></i>
+                </button>
+            </div>
+        </header>
+
+        <div class="search-bar-container">
+            <div class="search-bar">
+                <i class="fas fa-search"></i>
+                <input type="text" class="search-input" id="searchInput" placeholder="Search history or content...">
+                <span class="search-shortcut">Ctrl K</span>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <!-- Welcome Screen -->
+            <div class="welcome-screen" id="welcomeScreen">
+                <div class="welcome-icon"><i class="fas fa-brain"></i></div>
+                <h1 class="welcome-title">How can I assist you today?</h1>
+                <p class="welcome-subtitle">DarkMind AI is your advanced cybersecurity companion. Ask anything about penetration testing, vulnerability assessment, exploit development, and more.</p>
+                <div class="welcome-suggestions">
+                    <div class="suggestion-card" onclick="sendSuggestion('Explain OWASP Top 10')">
+                        <i class="fas fa-shield-alt"></i>
+                        <h4>OWASP Top 10</h4>
+                        <p>Learn about critical web security risks</p>
+                    </div>
+                    <div class="suggestion-card" onclick="sendSuggestion('How to start Reconnaissance?')">
+                        <i class="fas fa-binoculars"></i>
+                        <h4>Reconnaissance</h4>
+                        <p>Master information gathering techniques</p>
+                    </div>
+                    <div class="suggestion-card" onclick="sendSuggestion('Write a Python port scanner')">
+                        <i class="fab fa-python"></i>
+                        <h4>Python Tools</h4>
+                        <p>Build custom security tools</p>
+                    </div>
+                    <div class="suggestion-card" onclick="sendSuggestion('Explain Buffer Overflow')">
+                        <i class="fas fa-bomb"></i>
+                        <h4>Exploitation</h4>
+                        <p>Understand binary exploitation</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Messages Area -->
+            <div class="messages-area hidden" id="messagesArea"></div>
+
+            <!-- Template pesan user -->
+            <template id="userMessageTemplate">
+                <div class="message user" data-message-id="" data-content="" data-role="user">
+                    <div class="message-content"></div>
+                    <span class="message-time"></span>
+                    <div class="message-actions-row">
+                        <button class="msg-action-btn" title="Edit"><i class="fas fa-pen"></i></button>
+                        <button class="msg-action-btn" title="Copy"><i class="fas fa-copy"></i></button>
+                        <button class="msg-action-btn" title="Branch"><i class="fas fa-code-branch"></i></button>
+                        <button class="msg-action-btn" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Template pesan AI -->
+            <template id="aiMessageTemplate">
+                <div class="message assistant" data-role="assistant" data-content="">
+                    <div class="message-content"></div>
+                    
+                    <!-- Info bar -->
+                    <div class="info-bar">
+                        <div class="info-model">
+                            <i class="fas fa-cube" aria-hidden="true"></i>
+                            <span class="info-model-name">Huihui-Qwen3.5</span>
+                            <span class="info-model-badge">0.8B</span>
+                            <span class="info-model-badge">Q4_K_M</span>
+                            <span class="info-model-badge special">abliterated</span>
+                        </div>
+                        <div class="info-stats">
+                            <span class="info-stat"><i class="fas fa-font"></i> <span class="info-tokens">0</span> tokens</span>
+                            <span class="info-stat"><i class="fas fa-clock"></i> <span class="info-time">0s</span></span>
+                            <span class="info-stat"><i class="fas fa-tachometer-alt"></i> <span class="info-speed">0</span> t/s</span>
+                        </div>
+                    </div>
+                    
+                    <div class="message-actions-row">
+                        <div class="message-time"><span></span></div>
+                        <button class="msg-action-btn" title="Regenerate"><i class="fas fa-redo"></i></button>
+                        <button class="msg-action-btn" title="Copy"><i class="fas fa-copy"></i></button>
+                        <button class="msg-action-btn" title="Branch"><i class="fas fa-code-branch"></i></button>
+                        <button class="msg-action-btn" title="Delete"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            </template>
+
+            <!-- Input Area -->
+            <div class="input-area">
+                <div class="input-wrapper">
+                    <div class="input-controls">
+                        <div class="input-controls-left">
+                            <input type="file" id="fileInput" onchange="handleFileUpload(this)">
+                            <button class="btn-upload" onclick="document.getElementById('fileInput').click()" title="Upload File">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <div class="file-info" id="fileInfo">
+                                <i class="fas fa-file-alt"></i>
+                                <span id="fileName"></span>
+                                <button onclick="clearFile()"><i class="fas fa-times"></i></button>
+                            </div>
+                        </div>
+
+                        <div id="chat-processing-info" class="chat-processing-info-content hidden md:flex">
+                            <span id="stat-context" class="chat-processing-info-detail">
+                                Context: 0/262144 (0%)
+                            </span>
+                            <span id="stat-output" class="chat-processing-info-detail">
+                                Output: 0/∞
+                            </span>
+                            <span id="stat-speed" class="chat-processing-info-detail">
+                                0.0 t/s
+                            </span>
+                        </div>
+
+                        <div class="model-selector">
+                            <button class="model-select-btn" id="modelSelectBtn" onclick="toggleModelDropdown()">
+                                <i class="fas fa-microchip"></i>
+                                <span id="selectedModel">Local Model</span>
+                                <i class="fas fa-chevron-down" style="font-size:10px;"></i>
+                            </button>
+                            <div class="model-dropdown" id="modelDropdown">
+                                <div class="model-option selected" onclick="selectModel('Local Model', this)">
+                                    <i class="fas fa-server"></i>
+                                    <div class="model-option-info">
+                                        <div class="model-option-name">Local Model</div>
+                                        <div class="model-option-desc">Run model on Computer</div>
+                                    </div>
+                                </div>
+                                <div class="model-option" onclick="selectModel('GPT-4 Turbo', this)">
+                                    <i class="fas fa-bolt"></i>
+                                    <div class="model-option-info">
+                                        <div class="model-option-name">GPT-4 Turbo</div>
+                                        <div class="model-option-desc">Most capable model</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <textarea class="chat-input" id="chatInput" placeholder="Type your message..." rows="1" onkeydown="handleKeyDown(event)" oninput="autoResize(this)"></textarea>
+                    <div class="input-actions">
+                        <button class="btn-send" id="sendBtn" onclick="sendMessage()"><i class="fas fa-paper-plane"></i></button>
+                        <button class="btn-stop" id="stopBtn" onclick="stopGeneration()"><i class="fas fa-stop"></i></button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+</div>
+
+<!-- Status Bar -->
+<div class="status-bar" id="statusBar">
+    <i class="fas fa-circle-notch fa-spin"></i>
+    <span id="statusText">Connecting...</span>
+</div>
+
+<!-- ============================================ -->
+<!-- JAVASCRIPT - Static folder -->
+<!-- ============================================ -->
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+
+</body>
+</html>
