@@ -80,7 +80,7 @@ class AgentAI:
         if not self.berjalan:
             print("[ERROR] Agent belum running. Panggil mulai_sesi() terlebih dahulu")
             return {
-                'response': '',
+                'respon': '',
                 'error': 'Agent not running',
                 'tool_used': None,
                 'success': False
