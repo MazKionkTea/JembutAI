@@ -1,4 +1,4 @@
-# config.py
+# configurasi.py
 """
 Global Configuration - Konfigurasi untuk seluruh aplikasi
 """
@@ -6,14 +6,16 @@ Global Configuration - Konfigurasi untuk seluruh aplikasi
 import os
 from pathlib import Path
 from typing import Optional, Dict, Any
+import dotenv
 
 
-class Config:
+class Konfigurasi:
     """Konfigurasi global aplikasi"""
     
     def __init__(self):
         """Inisialisasi konfigurasi dengan default values"""
         # STATUS: OK - Constructor berjalan normal
+
         
         # ========== PATHS ==========
         self.BASE_DIR = Path(__file__).parent
@@ -22,14 +24,14 @@ class Config:
         self.DOCUMENTS_DIR = self.BASE_DIR / "documents"
         self.LOGS_DIR = self.BASE_DIR / "logs"
         self.CACHE_DIR = self.BASE_DIR / "cache"
+        self.ENV = dotenv.load_dotenv(".env")
         
         # Buat direktori jika belum ada
-        for dir_path in [self.MODELS_DIR, self.DATABASE_DIR, self.DOCUMENTS_DIR, 
-                         self.LOGS_DIR, self.CACHE_DIR]:
+        for dir_path in [self.MODELS_DIR, self.DATABASE_DIR, self.DOCUMENTS_DIR, self.LOGS_DIR, self.CACHE_DIR]:
             dir_path.mkdir(parents=True, exist_ok=True)
         
         # ========== LLM CONFIG ==========
-        self.MODEL_PATH = os.getenv("MODEL_PATH", str(self.MODELS_DIR / "deepseek-v4.gguf"))
+        self.MODEL_PATH = os.getenv("MODEL_PATH", str(self.MODELS_DIR / "Qwen3.5-2B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf"))
         self.N_CTX = int(os.getenv("N_CTX", "8192"))
         self.N_GPU_LAYERS = int(os.getenv("N_GPU_LAYERS", "0"))
         self.N_THREADS = int(os.getenv("N_THREADS", "0")) or None
@@ -82,6 +84,7 @@ class Config:
             },
             'llm': {
                 'model_path': self.MODEL_PATH,
+                'model_env': self.ENV,
                 'n_ctx': self.N_CTX,
                 'n_gpu_layers': self.N_GPU_LAYERS,
                 'n_threads': self.N_THREADS,
@@ -151,6 +154,7 @@ class Config:
         
         lines.append("\n[LLM]")
         lines.append(f"  Model: {self.MODEL_PATH}")
+        lines.append(f"  Model env: {self.ENV}")
         lines.append(f"  Context: {self.N_CTX}")
         lines.append(f"  GPU Layers: {self.N_GPU_LAYERS}")
         lines.append(f"  Max Tokens: {self.MAX_TOKENS}")
@@ -187,9 +191,8 @@ class Config:
 
 
 # Singleton instance
-config = Config()
-
+konfigurasi = Konfigurasi()
 
 # Placeholder untuk testing
 if __name__ == "__main__":
-    print(config.display())
+    print(konfigurasi.display())

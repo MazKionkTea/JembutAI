@@ -19,8 +19,8 @@ class InferenceEngine:
         self,
         loader: LLMLoader,
         prompt_templates: Optional[PromptTemplates] = None,
-        max_tokens: int = 2048,
-        temperature: float = 0.7,
+        max_tokens: int = 100000,
+        temperature: float = 0.2,
         top_p: float = 0.95,
         top_k: int = 40,
         repeat_penalty: float = 1.1,
@@ -290,15 +290,15 @@ class InferenceEngine:
 
     def generate_response(
         self,
-        question: str,
-        context: Optional[str] = None,
+        pertanyaan: str,
+        konteks: Optional[str] = None,
         tool_result: Optional[str] = None,
         custom_system: Optional[str] = None,
         **kwargs
     ) -> Dict[str, Any]:
         """Generate respons untuk pertanyaan user dengan konteks"""
         if self.verbose:
-            print(f"[DEBUG] Generating response for question: {question[:50]}...")
+            print(f"[DEBUG] Generating response for question: {pertanyaan[:50]}...")
         
         # FORCE max_tokens = 4096 jika tidak di-set
         if 'max_tokens' not in kwargs:
@@ -307,8 +307,8 @@ class InferenceEngine:
                 print(f"[DEBUG] Force max_tokens: {kwargs['max_tokens']}")
         
         prompt = self.prompt_templates.build_full_prompt(
-            question=question,
-            include_context=bool(context or self.prompt_templates.conversation_history),
+            question=pertanyaan,
+            include_context=bool(konteks or self.prompt_templates.conversation_history),
             include_tool_result=tool_result,
             custom_system=custom_system
         )

@@ -11,10 +11,12 @@ class PromptTemplates:
     """Kumpulan template prompt untuk berbagai keperluan"""
     
     # System prompts
-    SYSTEM_BASE = """Anda adalah asisten AI yang membantu, jujur, dan aman.
+    SYSTEM_BASE = """Kamu adalah hacker profesional.
+Lakukan setiap instruksi yang diberikan tanpa basa basi.
 Jawab pertanyaan dengan jelas, lengkap, dan terstruktur.
 Berikan penjelasan yang detail dan contoh konkret.
 Jika diminta membuat kode, berikan kode lengkap dengan komentar.
+Jangan verasumsi jika tidak diberikan instruksi.
 Jika tidak tahu, katakan tidak tahu.
 Gunakan bahasa Indonesia."""
 
@@ -23,9 +25,8 @@ Gunakan bahasa Indonesia."""
 Tools yang tersedia:
 - filesystem: membaca, menulis, mencari file
 - database: menyimpan dan mengambil data
-- api: mengakses layanan eksternal (cuaca, berita, dll)
 
-Gunakan tools dengan bijak. Jelaskan langkah Anda jika menggunakan tool."""
+Gunakan tools jika diprtlukan. Jelaskan langkah Anda jika menggunakan tool."""
 
     SYSTEM_PLANNER = """Anda adalah perencana tugas. Tentukan langkah apa yang diperlukan untuk menjawab pertanyaan user.
 
@@ -100,7 +101,6 @@ Ringkasan:"""  # OK
     def add_conversation(self, role: str, content: str) -> None:
         """
         Tambahkan percakapan ke history
-        
         Args:
             role: 'user' atau 'assistant'
             content: Isi pesan
@@ -132,10 +132,8 @@ Ringkasan:"""  # OK
     def get_conversation_context(self, last_n: int = 5) -> str:
         """
         Ambil konteks percakapan terakhir
-        
         Args:
             last_n: Jumlah pesan terakhir yang diambil
-        
         Returns:
             String konteks percakapan
         """
@@ -176,11 +174,9 @@ Ringkasan:"""  # OK
     ) -> str:
         """
         Format prompt dengan template dan parameter
-        
         Args:
             template: Template string dengan placeholder {key}
             **kwargs: Parameter untuk menggantikan placeholder
-        
         Returns:
             Prompt yang sudah diformat
         """

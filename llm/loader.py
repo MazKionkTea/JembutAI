@@ -11,7 +11,7 @@ from pathlib import Path           # pathlib.Path - manipulasi path file secara 
 class LLMLoader:                        # Membungkus semua fungsi loader dalam satu class.
     """Loader untuk model GGUF lokal"""
     
-    def __init__(                               # Constructor class. Parameter:
+    def __init__(                               # Constructois_runningr class. Parameter:
         self,
         model_path: str = "models/deepseek-v4.gguf",        # model_path: lokasi file model (default DeepSeek-V4)
         n_ctx: int = 8192,                                                          # n_ctx: panjang konteks yang bisa diproses (8192 token)
@@ -21,7 +21,6 @@ class LLMLoader:                        # Membungkus semua fungsi loader dalam s
     ):
         """
         Inisialisasi loader model
-        
         Args:
             model_path: Path ke file .gguf (default: models/deepseek-v4.gguf)
             n_ctx: Konteks window size
@@ -49,7 +48,6 @@ class LLMLoader:                        # Membungkus semua fungsi loader dalam s
     def load(self):
         """
         Muat model menggunakan llama-cpp-python
-        
         Returns:
             Instance Llama
         """
