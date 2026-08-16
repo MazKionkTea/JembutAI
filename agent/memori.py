@@ -10,44 +10,43 @@ from datetime import datetime
 from pathlib import Path
 
 
-class MemoryManager:
+class PengelolaMemori:
     """Manajemen memori menggunakan SQLite"""
     
     def __init__(
         self,
-        db_path: str = "database/assistant.db",
-        max_history: int = 50,
+        lokasi_database: str = "database/assistant.db",
+        histori_maksimal: int = 50,
         verbose: bool = False
     ):
         """
         Inisialisasi memory manager
-        
         Args:
-            db_path: Path ke database SQLite
-            max_history: Maksimal history per sesi
+            lokasi_database: Path ke database SQLite
+            histori_maksimal: Maksimal history per sesi
             verbose: Mode verbose
         """
         # STATUS: OK - Constructor berjalan normal
-        self.db_path = Path(db_path)
-        self.max_history = max_history
+        self.lokasi_database = Path(lokasi_database)
+        self.histori_maksimal = histori_maksimal
         self.verbose = verbose
-        self.current_session_id = None
+        self.identitas_sesi_saat_ini = None
         
         # Buat direktori jika belum ada
-        self.db_path.parent.mkdir(parents=True, exist_ok=True)
+        self.lokasi_database.parent.mkdir(parents=True, exist_ok=True)
         
         # Inisialisasi database
-        self._init_database()
+        self._inisiasi_database()
         
         if self.verbose:
-            print(f"[DEBUG] MemoryManager initialized with db: {self.db_path}")
+            print(f"[DEBUG] MemoryManager initialized with db: {self.lokasi_database}")
 
-    def _init_database(self) -> None:
+    def _inisiasi_database(self) -> None:
         """Buat tabel jika belum ada"""
         # STATUS: OK - Method berjalan normal
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            koneksi = sqlite3.connect(str(self.lokasi_database))
+            cursor = koneksi.cursor()
             
             # Tabel sessions
             cursor.execute("""
@@ -95,8 +94,8 @@ class MemoryManager:
                 ON messages(role)
             """)
             
-            conn.commit()
-            conn.close()
+            koneksi.commit()
+            koneksi.close()
             
             if self.verbose:
                 print("[DEBUG] Database initialized successfully")
@@ -105,30 +104,31 @@ class MemoryManager:
             print(f"[ERROR] Database initialization failed: {e}")
             raise
 
-    def start_session(self, session_id: Optional[str] = None, metadata: Optional[Dict] = None) -> Optional[str]:
+
+    def mulai_sesi(self, identitas_sesi: Optional[str] = None, metadata: Optional[Dict] = None) -> Optional[str]:
         """
         Mulai sesi baru atau lanjutkan sesi yang ada
         
         Args:
-            session_id: ID sesi (None = buat baru)
+            identitas_sesi: ID sesi (None = buat baru)
             metadata: Metadata tambahan untuk sesi
         
         Returns:
-            session_id yang digunakan atau None jika gagal
+            identitas_sesi yang digunakan atau None jika gagal
         """
         # STATUS: OK - Method berjalan normal
-        if session_id is None:
-            # Buat session_id baru
-            session_id = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+        if identitas_sesi is None:
+            # Buat identitas_sesi baru
+            identitas_sesi = f"session_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
         
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            koneksi = sqlite3.connect(str(self.lokasi_database))
+            cursor = koneksi.cursor()
             
-            # Cek apakah session_id sudah ada
+            # Cek apakah identitas_sesi sudah ada
             cursor.execute(
                 "SELECT session_id FROM sessions WHERE session_id = ?",
-                (session_id,)
+                (identitas_sesi,)
             )
             existing = cursor.fetchone()
             
@@ -137,30 +137,30 @@ class MemoryManager:
                 metadata_json = json.dumps(metadata) if metadata else None
                 cursor.execute(
                     "INSERT INTO sessions (session_id, metadata) VALUES (?, ?)",
-                    (session_id, metadata_json)
+                    (identitas_sesi, metadata_json)
                 )
-                conn.commit()
+                koneksi.commit()
                 if self.verbose:
-                    print(f"[DEBUG] New session created: {session_id}")
+                    print(f"[DEBUG] New session created: {identitas_sesi}")
             else:
                 # Update updated_at
                 cursor.execute(
                     "UPDATE sessions SET updated_at = CURRENT_TIMESTAMP WHERE session_id = ?",
-                    (session_id,)
+                    (identitas_sesi,)
                 )
-                conn.commit()
+                koneksi.commit()
                 if self.verbose:
-                    print(f"[DEBUG] Session resumed: {session_id}")
+                    print(f"[DEBUG] Session resumed: {identitas_sesi}")
             
-            conn.close()
-            self.current_session_id = session_id
-            return session_id
+            koneksi.close()
+            self.identitas_sesi_saat_ini = identitas_sesi
+            return identitas_sesi
             
         except sqlite3.Error as e:
             print(f"[ERROR] Failed to start session: {e}")
             return None
 
-    def add_message(self, role: str, content: str, tokens: int = 0) -> bool:
+    def tambah_percakapan(self, role: str, isi_pesan: str, jumlah_token: int = 0) -> bool:
         """
         Tambahkan pesan ke sesi saat ini
         
@@ -174,7 +174,7 @@ class MemoryManager:
         """
         # STATUS: OK - Method berjalan normal
         # VALIDASI
-        if self.current_session_id is None:
+        if self.identitas_sesi_saat_ini is None:
             print("[ERROR] No active session. Call start_session() first")
             return False
         
@@ -182,34 +182,34 @@ class MemoryManager:
             print(f"[ERROR] Invalid role: {role}")
             return False
         
-        if not content or not isinstance(content, str):
+        if not isi_pesan or not isinstance(isi_pesan, str):
             print("[ERROR] Content harus string tidak kosong")
             return False
         
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            koneksi = sqlite3.connect(str(self.lokasi_database))
+            cursor = koneksi.cursor()
             
             cursor.execute(
                 """INSERT INTO messages (session_id, role, content, tokens) 
                    VALUES (?, ?, ?, ?)""",
-                (self.current_session_id, role, content, tokens)
+                (self.identitas_sesi_saat_ini, role, isi_pesan, jumlah_token)
             )
             
             # Update updated_at di sessions
             cursor.execute(
                 "UPDATE sessions SET updated_at = CURRENT_TIMESTAMP WHERE session_id = ?",
-                (self.current_session_id,)
+                (self.identitas_sesi_saat_ini,)
             )
             
-            conn.commit()
-            conn.close()
+            koneksi.commit()
+            koneksi.close()
             
             if self.verbose:
-                print(f"[DEBUG] Message added: {role} - {content[:30]}...")
+                print(f"[DEBUG] Message added: {role} - {isi_pesan[:30]}...")
             
             # Cek batas history
-            self._enforce_max_history()
+            self._enforce_histori_maksimal()
             
             return True
             
@@ -217,10 +217,10 @@ class MemoryManager:
             print(f"[ERROR] Failed to add message: {e}")
             return False
 
-    def get_conversation_history(
+    def ambil_percakapan_dari_memori_history(
         self,
         limit: Optional[int] = None,
-        session_id: Optional[str] = None
+        identitas_sesi: Optional[str] = None
     ) -> List[Dict[str, Any]]:
         """
         Ambil history percakapan
@@ -233,16 +233,16 @@ class MemoryManager:
             List pesan dalam format [{'role': ..., 'content': ..., 'timestamp': ...}]
         """
         # STATUS: OK - Method berjalan normal
-        session = session_id or self.current_session_id
+        sesi = identitas_sesi or self.identitas_sesi_saat_ini
         
-        if session is None:
+        if sesi is None:
             print("[ERROR] No active session")
             return []
         
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
+            koneksi = sqlite3.connect(str(self.lokasi_database))
+            koneksi.row_factory = sqlite3.Row
+            cursor = koneksi.cursor()
             
             query = """
                 SELECT role, content, timestamp, tokens
@@ -263,11 +263,11 @@ class MemoryManager:
                     ) ORDER BY timestamp ASC
                 """
             
-            cursor.execute(query, (session,))
+            cursor.execute(query, (sesi,))
             rows = cursor.fetchall()
-            conn.close()
+            koneksi.close()
             
-            history = [
+            histori = [
                 {
                     'role': row['role'],
                     'content': row['content'],
@@ -278,15 +278,15 @@ class MemoryManager:
             ]
             
             if self.verbose:
-                print(f"[DEBUG] Retrieved {len(history)} messages from history")
+                print(f"[DEBUG] Retrieved {len(histori)} messages from history")
             
-            return history
+            return histori
             
         except sqlite3.Error as e:
             print(f"[ERROR] Failed to get history: {e}")
             return []
 
-    def get_last_messages(self, n: int = 5) -> List[Dict[str, Any]]:
+    def ambil_pesan_terakhir(self, n: int = 5) -> List[Dict[str, Any]]:
         """
         Ambil N pesan terakhir
         
@@ -297,9 +297,9 @@ class MemoryManager:
             List pesan terakhir
         """
         # STATUS: OK - Method berjalan normal
-        return self.get_conversation_history(limit=n)
+        return self.ambil_percakapan_dari_memori_history(limit=n)
 
-    def get_conversation_context(self, n: int = 5) -> str:
+    def ambil_konteks_percakapan(self, n: int = 5) -> str:
         """
         Ambil konteks percakapan dalam format string
         
@@ -310,19 +310,19 @@ class MemoryManager:
             String konteks percakapan
         """
         # STATUS: OK - Method berjalan normal
-        messages = self.get_last_messages(n)
+        percakapan = self.ambil_pesan_terakhir(n)
         
-        if not messages:
+        if not percakapan:
             return ""
         
         context_lines = []
-        for msg in messages:
-            role_label = "User" if msg['role'] == 'user' else "Assistant"
-            context_lines.append(f"{role_label}: {msg['content']}")
+        for pesan in percakapan:
+            role_label = "User" if pesan['role'] == 'user' else "Assistant"
+            context_lines.append(f"{role_label}: {pesan['content']}")
         
         return "\n".join(context_lines)
 
-    def save_summary(self, summary: str) -> bool:
+    def simpan_ringkasan_percakapan(self, summary: str) -> bool:
         """
         Simpan ringkasan percakapan
         
@@ -333,22 +333,22 @@ class MemoryManager:
             True jika berhasil
         """
         # STATUS: OK - Method berjalan normal
-        if self.current_session_id is None:
+        if self.identitas_sesi_saat_ini is None:
             print("[ERROR] No active session")
             return False
         
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            koneksi = sqlite3.connect(str(self.lokasi_database))
+            cursor = koneksi.cursor()
             
             cursor.execute(
                 """INSERT INTO memory_summary (session_id, summary) 
                    VALUES (?, ?)""",
-                (self.current_session_id, summary)
+                (self.identitas_sesi_saat_ini, summary)
             )
             
-            conn.commit()
-            conn.close()
+            koneksi.commit()
+            koneksi.close()
             
             if self.verbose:
                 print(f"[DEBUG] Summary saved: {summary[:50]}...")
@@ -359,7 +359,7 @@ class MemoryManager:
             print(f"[ERROR] Failed to save summary: {e}")
             return False
 
-    def get_summaries(self, limit: int = 5) -> List[Dict[str, Any]]:
+    def ambil_ringkasan_percakapan(self, limit: int = 5) -> List[Dict[str, Any]]:
         """
         Ambil ringkasan percakapan
         
@@ -370,14 +370,14 @@ class MemoryManager:
             List ringkasan
         """
         # STATUS: OK - Method berjalan normal
-        if self.current_session_id is None:
+        if self.identitas_sesi_saat_ini is None:
             print("[ERROR] No active session")
             return []
         
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
+            koneksi = sqlite3.connect(str(self.lokasi_database))
+            koneksi.row_factory = sqlite3.Row
+            cursor = koneksi.cursor()
             
             cursor.execute(
                 """SELECT summary, created_at 
@@ -385,13 +385,13 @@ class MemoryManager:
                    WHERE session_id = ? 
                    ORDER BY created_at DESC 
                    LIMIT ?""",
-                (self.current_session_id, limit)
+                (self.identitas_sesi_saat_ini, limit)
             )
             
             rows = cursor.fetchall()
-            conn.close()
+            koneksi.close()
             
-            summaries = [
+            ringkasan = [
                 {
                     'summary': row['summary'],
                     'created_at': row['created_at']
@@ -399,29 +399,29 @@ class MemoryManager:
                 for row in rows
             ]
             
-            return summaries
+            return ringkasan
             
         except sqlite3.Error as e:
             print(f"[ERROR] Failed to get summaries: {e}")
             return []
 
-    def _enforce_max_history(self) -> None:
+    def _enforce_histori_maksimal(self) -> None:
         """Batasi jumlah history per sesi"""
         # STATUS: OK - Method berjalan normal
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            koneksi = sqlite3.connect(str(self.lokasi_database))
+            cursor = koneksi.cursor()
             
             # Hitung total pesan
             cursor.execute(
                 "SELECT COUNT(*) FROM messages WHERE session_id = ?",
-                (self.current_session_id,)
+                (self.identitas_sesi_saat_ini,)
             )
             count = cursor.fetchone()[0]
             
             # Jika melebihi batas, hapus yang paling lama
-            if count > self.max_history:
-                delete_count = count - self.max_history
+            if count > self.histori_maksimal:
+                delete_count = count - self.histori_maksimal
                 cursor.execute(
                     """DELETE FROM messages 
                        WHERE id IN (
@@ -430,19 +430,19 @@ class MemoryManager:
                            ORDER BY timestamp ASC 
                            LIMIT ?
                        )""",
-                    (self.current_session_id, delete_count)
+                    (self.identitas_sesi_saat_ini, delete_count)
                 )
-                conn.commit()
+                koneksi.commit()
                 
                 if self.verbose:
                     print(f"[DEBUG] Deleted {delete_count} old messages to enforce history limit")
             
-            conn.close()
+            koneksi.close()
             
         except sqlite3.Error as e:
             print(f"[ERROR] Failed to enforce history limit: {e}")
 
-    def clear_session(self, session_id: Optional[str] = None) -> bool:
+    def bersihkan_sesi(self, identitas_sesi: Optional[str] = None) -> bool:
         """
         Hapus semua data sesi
         
@@ -453,33 +453,33 @@ class MemoryManager:
             True jika berhasil
         """
         # STATUS: OK - Method berjalan normal
-        session = session_id or self.current_session_id
+        sesi = identitas_sesi or self.identitas_sesi_saat_ini
         
-        if session is None:
+        if sesi is None:
             print("[ERROR] No active session")
             return False
         
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            koneksi = sqlite3.connect(str(self.lokasi_database))
+            cursor = koneksi.cursor()
             
             # Hapus pesan
-            cursor.execute("DELETE FROM messages WHERE session_id = ?", (session,))
+            cursor.execute("DELETE FROM messages WHERE session_id = ?", (sesi,))
             
             # Hapus summary
-            cursor.execute("DELETE FROM memory_summary WHERE session_id = ?", (session,))
+            cursor.execute("DELETE FROM memory_summary WHERE session_id = ?", (sesi,))
             
             # Hapus sesi
-            cursor.execute("DELETE FROM sessions WHERE session_id = ?", (session,))
+            cursor.execute("DELETE FROM sessions WHERE session_id = ?", (sesi,))
             
-            conn.commit()
-            conn.close()
+            koneksi.commit()
+            koneksi.close()
             
             if self.verbose:
-                print(f"[DEBUG] Session cleared: {session}")
+                print(f"[DEBUG] Session cleared: {sesi}")
             
-            if session == self.current_session_id:
-                self.current_session_id = None
+            if sesi == self.identitas_sesi_saat_ini:
+                self.identitas_sesi_saat_ini= None
             
             return True
             
@@ -487,21 +487,20 @@ class MemoryManager:
             print(f"[ERROR] Failed to clear session: {e}")
             return False
 
-    def get_stats(self) -> Dict[str, Any]:
+    def status_memori_terakhir(self) -> Dict[str, Any]:
         """
         Ambil statistik memory
-        
         Returns:
             Dict statistik
         """
         # STATUS: OK - Method berjalan normal
         try:
-            conn = sqlite3.connect(str(self.db_path))
-            cursor = conn.cursor()
+            koneksi = sqlite3.connect(str(self.lokasi_database))
+            cursor = koneksi.cursor()
             
             # Total sessions
             cursor.execute("SELECT COUNT(*) FROM sessions")
-            total_sessions = cursor.fetchone()[0]
+            total_sesi = cursor.fetchone()[0]
             
             # Total messages
             cursor.execute("SELECT COUNT(*) FROM messages")
@@ -509,26 +508,26 @@ class MemoryManager:
             
             # Total summaries
             cursor.execute("SELECT COUNT(*) FROM memory_summary")
-            total_summaries = cursor.fetchone()[0]
+            total_ringkasan = cursor.fetchone()[0]
             
             # Messages per session (current)
-            msgs_per_session = 0
-            if self.current_session_id:
+            pesan_per_sesi= 0
+            if self.identitas_sesi_saat_ini:
                 cursor.execute(
                     "SELECT COUNT(*) FROM messages WHERE session_id = ?",
-                    (self.current_session_id,)
+                    (self.identitas_sesi_saat_ini,)
                 )
-                msgs_per_session = cursor.fetchone()[0]
+                pesan_per_sesi= cursor.fetchone()[0]
             
-            conn.close()
+            koneksi.close()
             
             return {
-                'total_sessions': total_sessions,
+                'total_sessions': total_sesi,
                 'total_messages': total_messages,
-                'total_summaries': total_summaries,
-                'current_session': self.current_session_id,
-                'messages_in_current_session': msgs_per_session,
-                'max_history_limit': self.max_history
+                'total_summaries': total_ringkasan,
+                'current_session': self.identitas_sesi_saat_ini,
+                'messages_in_current_session': pesan_per_sesi,
+                'histori_maksimal_limit': self.histori_maksimal
             }
             
         except sqlite3.Error as e:
@@ -544,43 +543,43 @@ if __name__ == "__main__":
     
     # Inisialisasi
     print("\n[TEST] Init MemoryManager")
-    memory = MemoryManager(verbose=True)
+    memori = PengelolaMemori(verbose=True)
     
     # Test start session
     print("\n[TEST] Start session")
-    session_id = memory.start_session()
-    print(f"Session ID: {session_id}")
+    identitas_sesi = memori.mulai_sesi()
+    print(f"Session ID: {identitas_sesi}")
     
     # Test add message
     print("\n[TEST] Add messages")
-    memory.add_message("user", "Halo, saya ingin bertanya", 10)
-    memory.add_message("assistant", "Ya, silakan bertanya", 8)
-    memory.add_message("user", "Apa cuaca hari ini?", 7)
+    memori.tambah_percakapan("user", "Halo, saya ingin bertanya", 10)
+    memori.tambah_percakapan("assistant", "Ya, silakan bertanya", 8)
+    memori.tambah_percakapan("user", "Apa cuaca hari ini?", 7)
     
     # Test get history
     print("\n[TEST] Get history")
-    history = memory.get_conversation_history()
-    for msg in history:
-        print(f"  {msg['role']}: {msg['content']}")
+    histori = memori.ambil_percakapan_dari_memori_history()
+    for pesan in histori:
+        print(f"  {pesan['role']}: {pesan['content']}")
     
     # Test get context
     print("\n[TEST] Get context")
-    context = memory.get_conversation_context(2)
+    context = memori.ambil_konteks_percakapan(2)
     print(f"Context:\n{context}")
     
     # Test save summary
     print("\n[TEST] Save summary")
-    memory.save_summary("Percakapan tentang cuaca")
+    memori.simpan_ringkasan_percakapan("Percakapan tentang cuaca")
     
     # Test get summaries
     print("\n[TEST] Get summaries")
-    summaries = memory.get_summaries()
-    for s in summaries:
+    ringkasan = memori.ambil_ringkasan_percakapan()
+    for s in ringkasan:
         print(f"  {s['summary']} - {s['created_at']}")
     
     # Test stats
     print("\n[TEST] Get stats")
-    stats = memory.get_stats()
+    stats = memori.status_memori_terakhir()
     print(f"Stats: {stats}")
     
     print("\n" + "=" * 50)

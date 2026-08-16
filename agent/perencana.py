@@ -7,22 +7,21 @@ from typing import Optional, List, Dict, Any, Tuple
 import json
 import re
 
-from agent.context import ContextManager, AgentState
+from agen.konteks import PengelolaKonteks, StatusAgen
 
 
-class Planner:
+class Perencana:
     """Perencana tugas - menentukan tool apa yang dibutuhkan"""
     
     def __init__(
         self,
-        context_manager: ContextManager,
-        available_tools: Optional[List[str]] = None,
-        use_llm: bool = True,
+        pengelola_konteks: PengelolaKonteks,
+        tools_yang_tersedia: Optional[List[str]] = None,
+        gunakan_llm : bool = True,
         verbose: bool = False
     ):
         """
         Inisialisasi planner
-        
         Args:
             context_manager: Instance ContextManager
             available_tools: Daftar tool yang tersedia
@@ -30,21 +29,16 @@ class Planner:
             verbose: Mode verbose
         """
         # STATUS: OK - Constructor berjalan normal
-        self.context = context_manager
-        self.use_llm = use_llm
+        self.konteks = pengelola_konteks
+        self.gunakan_llm = gunakan_llm 
         self.verbose = verbose
-        self.llm = None  # Akan di-set nanti
+        self.llm = None  
         self.active = False  # ← DEFAULT: PLANNER NONAKTIF
         
         # Tool registry
-        self.available_tools = available_tools or [
+        self.tools_yang_tersedia = tools_yang_tersedia or [
             'filesystem',
             'database',
-            # 'weather',
-            # 'wikipedia',
-            # 'news',
-            # 'currency',
-            # 'translate',
             'github',
             'shell',
             'none'
@@ -61,23 +55,6 @@ class Planner:
                 r'(simpan|insert|tambah|query|select|statistik)\s*(data|note|memory|database)',
                 r'ingatkan|ingat\s+(tentang|akan)'
             ],
-            # 'weather': [
-            #     r'cuaca|suhu|temperature|weather|hujan|cerah|panas|dingin',
-            #     r'(berapa|bagaimana)\s*(cuaca|suhu)'
-            # ],
-            # 'wikipedia': [
-            #     r'wikipedia|wiki|ensiklopedia',
-            #     r'cari\s+(tentang|informasi)'
-            # ],
-            # 'news': [
-            #     r'berita|news|terkini|headline'
-            # ],
-            # 'currency': [
-            #     r'mata\s*uang|currency|kurs|rupiah|dolar|euro|yen|convert|konversi'
-            # ],
-            # 'translate': [
-            #     r'terjemah|translate|artikan|bahasa'
-            # ],
             'github': [
                 r'github|repository|repo|commit|pull\s*request'
             ],
@@ -90,11 +67,6 @@ class Planner:
         self.tool_keywords = {
             'filesystem': ['file', 'folder', 'direktori', 'pdf', 'doc', 'txt', 'baca', 'tulis'],
             'database': ['database', 'sqlite', 'simpan', 'ingat', 'data'],
-            # 'weather': ['cuaca', 'suhu', 'temperatur', 'weather'],
-            # 'wikipedia': ['wikipedia', 'wiki', 'ensiklopedia'],
-            # 'news': ['berita', 'news', 'headline'],
-            # 'currency': ['mata uang', 'kurs', 'rupiah', 'dolar'],
-            # 'translate': ['terjemah', 'translate', 'bahasa'],
             'github': ['github', 'repo'],
             'shell': ['terminal', 'command', 'jalankan']
         }
@@ -103,11 +75,6 @@ class Planner:
         self.tool_priority = {
             'filesystem': 2,
             'database': 3,
-            # 'weather': 1,
-            # 'wikipedia': 1,
-            # 'news': 1,
-            # 'currency': 1,
-            # 'translate': 1,
             'github': 1,
             'shell': 4,  # Prioritas rendah karena berbahaya
             'none': 5
@@ -115,13 +82,13 @@ class Planner:
         
         if self.verbose:
             print(f"[DEBUG] Planner initialized")
-            print(f"[DEBUG] Available tools: {self.available_tools}")
-            print(f"[DEBUG] Use LLM: {self.use_llm}")
+            print(f"[DEBUG] Available tools: {self.tools_yang_tersedia}")
+            print(f"[DEBUG] Use LLM: {self.gunakan_llm }")
 
-    def set_llm(self, llm) -> None:
+
+    def siapkan_llm(self, llm) -> None:
         """
         Set LLM instance untuk planning berbasis AI
-        
         Args:
             llm: Instance InferenceEngine
         """
@@ -130,19 +97,18 @@ class Planner:
         if self.verbose:
             print("[DEBUG] LLM set for planner")
 
-    def plan(self, question: str) -> Dict[str, Any]:
+
+    def rencana(self, pertanyaan: str) -> Dict[str, Any]:
         """
         Tentukan langkah yang diperlukan untuk menjawab pertanyaan
-        
         Args:
             question: Pertanyaan user
-        
         Returns:
             Dict dengan: tool, confidence, reasoning
         """
         # STATUS: OK - Method berjalan normal
         # VALIDASI        
-        if not question or not isinstance(question, str):
+        if not pertanyaan or not isinstance(pertanyaan, str):
             return {
                 'tool': 'none',
                 'confidence': 0.0,
@@ -161,17 +127,17 @@ class Planner:
             }
 
         if self.verbose:
-            print(f"[DEBUG] Planning for: {question[:50]}...")
+            print(f"[DEBUG] Planning for: {pertanyaan[:50]}...")
         
         # Update context
-        self.context.set_state(AgentState.PLANNING)
-        self.context.set_question(question)
+        self.konteks.status_agen(StatusAgen.PLANNING)
+        self.konteks.pertanyaan_pengguna(pertanyaan)
         
         # Pilih tool
-        if self.use_llm and self.llm:
-            result = self._plan_with_llm(question)
+        if self.gunakan_llm and self.llm:
+            result = self.rencana_dengan_llm(pertanyaan)
         else:
-            result = self._plan_with_rules(question)
+            result = self.rencana_dengan_aturan(pertanyaan)
         
         # Log hasil
         if self.verbose:
@@ -180,26 +146,25 @@ class Planner:
         
         # Update context
         if result['tool'] != 'none':
-            self.context.set_tool(result['tool'])
+            self.konteks.tool_yang_digunakan(result['tool'])
         else:
-            self.context.set_tool(None)
+            self.konteks.tool_yang_digunakan(None)
         
-        self.context.set_state(AgentState.IDLE)
+        self.konteks.status_agen(StatusAgen.IDLE)
         
         return result
 
-    def _plan_with_rules(self, question: str) -> Dict[str, Any]:
+
+    def rencana_dengan_aturan(self, pertanyaan: str) -> Dict[str, Any]:
         """
         Planning berbasis aturan (rule-based)
-        
         Args:
             question: Pertanyaan user
-        
         Returns:
             Dict hasil planning
         """
         # STATUS: OK - Method berjalan normal
-        question_lower = question.lower()
+        question_lower = pertanyaan.lower()
         
         # Cek setiap tool pattern
         tool_scores = {}
@@ -256,25 +221,23 @@ class Planner:
             'scores': {}
         }
 
-    def _plan_with_llm(self, question: str) -> Dict[str, Any]:
+    def rencana_dengan_llm(self, pertanyaan: str) -> Dict[str, Any]:
         """
         Planning berbasis LLM
-        
         Args:
             question: Pertanyaan user
-        
         Returns:
             Dict hasil planning
         """
         # STATUS: OK - Method berjalan normal
         if not self.llm:
             print("[ERROR] LLM not set. Falling back to rules")
-            return self._plan_with_rules(question)
+            return self.rencana_dengan_aturan(pertanyaan)
         
         try:
             # Buat prompt
-            tools_list = ', '.join([t for t in self.available_tools if t != 'none'])
-            prompt = f"""Pertanyaan user: {question}
+            tools_list = ', '.join([t for t in self.tools_yang_tersedia if t != 'none'])
+            prompt = f"""Pertanyaan user: {pertanyaan}
 
 Tools yang tersedia: {tools_list}
 
@@ -289,7 +252,7 @@ Pilihan tool:"""
             # Generate dengan LLM
             result = self.llm.generate(
                 prompt=prompt,
-                max_tokens=200,
+                max_tokens=10000,
                 temperature=0.3  # Lebih deterministik
             )
             
@@ -307,7 +270,7 @@ Pilihan tool:"""
                     tool = data.get('tool', 'none').strip().lower()
                     
                     # Validasi tool
-                    if tool not in self.available_tools:
+                    if tool not in self.tools_yang_tersedia:
                         tool = 'none'
                     
                     return {
@@ -320,7 +283,7 @@ Pilihan tool:"""
                     pass
             
             # Fallback: coba ekstrak tool dari teks
-            for tool in self.available_tools:
+            for tool in self.tools_yang_tersedia:
                 if tool in text.lower():
                     return {
                         'tool': tool,
@@ -338,20 +301,18 @@ Pilihan tool:"""
             
         except Exception as e:
             print(f"[ERROR] LLM planning failed: {e}")
-            return self._plan_with_rules(question)
+            return self.rencana_dengan_aturan(pertanyaan)
 
-    def needs_tool(self, question: str) -> Tuple[bool, Optional[str]]:
+    def needs_tool(self, pertanyaan: str) -> Tuple[bool, Optional[str]]:
         """
         Cek apakah pertanyaan membutuhkan tool
-        
         Args:
             question: Pertanyaan user
-        
         Returns:
             (needs_tool, tool_name)
         """
         # STATUS: OK - Method berjalan normal
-        result = self.plan(question)
+        result = self.rencana(pertanyaan)
         tool = result.get('tool', 'none')
         
         needs = tool != 'none' and result.get('confidence', 0) > 0.3
@@ -361,7 +322,8 @@ Pilihan tool:"""
         
         return needs, tool if needs else None
 
-    def add_tool(self, tool_name: str, patterns: List[str], keywords: List[str]) -> None:
+
+    def tambahkan_tool(self, nama_tool: str, patterns: List[str], keywords: List[str]) -> None:
         """
         Tambahkan tool baru ke planner
         
@@ -371,54 +333,54 @@ Pilihan tool:"""
             keywords: List keyword
         """
         # STATUS: OK - Method berjalan normal
-        if tool_name not in self.available_tools:
-            self.available_tools.append(tool_name)
+        if nama_tool not in self.tools_yang_tersedia:
+            self.tools_yang_tersedia.append(nama_tool)
         
         if patterns:
-            self.tool_patterns[tool_name] = patterns
+            self.tool_patterns[nama_tool] = patterns
         
         if keywords:
-            self.tool_keywords[tool_name] = keywords
+            self.tool_keywords[nama_tool] = keywords
         
         # Set prioritas default
-        if tool_name not in self.tool_priority:
-            self.tool_priority[tool_name] = 3
+        if nama_tool not in self.tool_priority:
+            self.tool_priority[nama_tool] = 3
         
         if self.verbose:
-            print(f"[DEBUG] Tool added: {tool_name}")
+            print(f"[DEBUG] Tool added: {nama_tool}")
 
-    def get_tool_capabilities(self, tool_name: str) -> Dict[str, Any]:
+
+    def ambil_kemampuan_tool(self, nama_tool: str) -> Dict[str, Any]:
         """
         Ambil kemampuan tool
-        
         Args:
             tool_name: Nama tool
-        
         Returns:
             Dict kemampuan tool
         """
         # STATUS: OK - Method berjalan normal
         return {
-            'name': tool_name,
-            'patterns': self.tool_patterns.get(tool_name, []),
-            'keywords': self.tool_keywords.get(tool_name, []),
-            'priority': self.tool_priority.get(tool_name, 3)
+            'name': nama_tool,
+            'patterns': self.tool_patterns.get(nama_tool, []),
+            'keywords': self.tool_keywords.get(nama_tool, []),
+            'priority': self.tool_priority.get(nama_tool, 3)
         }
 
-    def activate(self):
+
+    def mode_tool_aktif(self):
         """Aktifkan planner (mode tool)"""
         self.active = True
         if self.verbose:
             print("[DEBUG] Planner activated")
 
-    def deactivate(self):
+
+    def mode_tool_non_aktif(self):
         """Nonaktifkan planner (mode chat biasa)"""
         self.active = False
         if self.verbose:
             print("[DEBUG] Planner deactivated")
 
-    def is_active(self) -> bool:
-        """Cek apakah planner aktif"""
+    def apakah_planner_aktif(self) -> bool:
         return self.active
 
 
@@ -430,28 +392,22 @@ if __name__ == "__main__":
     
     # Inisialisasi
     print("\n[TEST] Init Planner")
-    context = ContextManager(verbose=False)
-    planner = Planner(context, verbose=True)
+    context = PengelolaKonteks(verbose=False)
+    planner = Perencana(context, verbose=True)
     
     # Test cases
     test_questions = [
-        # ("Apa cuaca di Jakarta hari ini?", "weather"),
         ("Baca file report.pdf", "filesystem"),
         ("Ingatkan saya tentang meeting", "database"),
-        # ("Cari informasi tentang AI di Wikipedia", "wikipedia"),
-        # ("Berita terbaru tentang Indonesia", "news"),
-        # ("Halo, apa kabar?", "none"),
-        # ("Convert 100 USD ke Rupiah", "currency"),
-        # ("Terjemahkan 'hello' ke bahasa Indonesia", "translate"),
         ("Jalankan perintah ls -la", "shell"),
         ("Apa itu Python?", "none")
     ]
     
     print("\n[TEST] Planning tests")
-    for question, expected in test_questions:
-        result = planner.plan(question)
+    for pertanyaan, expected in test_questions:
+        result = planner.rencana(pertanyaan)
         status = "✓" if result['tool'] == expected else "✗"
-        print(f"{status} Q: {question[:40]}...")
+        print(f"{status} Q: {pertanyaan[:40]}...")
         print(f"   Tool: {result['tool']} (expected: {expected})")
         print(f"   Confidence: {result['confidence']:.2f}")
         print(f"   Reasoning: {result['reasoning']}")
@@ -459,24 +415,24 @@ if __name__ == "__main__":
     
     # Test needs_tool
     print("\n[TEST] Needs tool tests")
-    for question, _ in test_questions[:3]:
-        needs, tool = planner.needs_tool(question)
-        print(f"Q: {question[:30]}...")
+    for pertanyaan, _ in test_questions[:3]:
+        needs, tool = planner.needs_tool(pertanyaan)
+        print(f"Q: {pertanyaan[:30]}...")
         print(f"  Needs tool: {needs}, Tool: {tool}")
         print()
     
     # Test add tool
     print("\n[TEST] Add custom tool")
-    planner.add_tool(
+    planner.tambahkan_tool(
         "calculator",
         patterns=[r'hitung|kalkulasi|calculate|math'],
         keywords=['hitung', 'kalkulasi', 'math']
     )
-    print(f"Tools available: {planner.available_tools}")
+    print(f"Tools available: {planner.tools_yang_tersedia}")
     
     # Test get capabilities
     print("\n[TEST] Get tool capabilities")
-    caps = planner.get_tool_capabilities("weather")
+    caps = planner.ambil_kemampuan_tool("weather")
     print(f"Weather capabilities: {caps}")
     
     print("\n" + "=" * 50)
