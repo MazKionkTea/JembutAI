@@ -31,12 +31,12 @@ class Konfigurasi:
             dir_path.mkdir(parents=True, exist_ok=True)
         
         # ========== LLM CONFIG ==========
-        self.MODEL_PATH = os.getenv("MODEL_PATH", str(self.MODELS_DIR / "Qwen3.5-2B-Uncensored-HauhauCS-Aggressive-Q4_K_M.gguf"))
+        self.MODEL_PATH = os.getenv("MODEL_PATH", str(self.MODELS_DIR / "Huihui-Qwen3.5-0.8B-abliterated.Q4_K_M.gguf"))
         self.N_CTX = int(os.getenv("N_CTX", "8192"))
         self.N_GPU_LAYERS = int(os.getenv("N_GPU_LAYERS", "0"))
         self.N_THREADS = int(os.getenv("N_THREADS", "0")) or None
         self.MAX_TOKENS = int(os.getenv("MAX_TOKENS", "10000"))
-        self.TEMPERATURE = float(os.getenv("TEMPERATURE", "0.7"))
+        self.TEMPERATURE = float(os.getenv("TEMPERATURE", "0.2"))
         self.TOP_P = float(os.getenv("TOP_P", "0.95"))
         self.TOP_K = int(os.getenv("TOP_K", "40"))
         self.REPEAT_PENALTY = float(os.getenv("REPEAT_PENALTY", "1.1"))
@@ -126,6 +126,49 @@ class Konfigurasi:
             }
         }
     
+    def _auto_detect_model(self) -> str:
+        """
+        Auto-detect model GGUF pertama yang tersedia di folder models/.
+        
+        Returns:
+            str: Path absolut ke model GGUF, atau path default jika tidak ditemukan.
+        """
+        # 1. Pastikan direktori models ada
+        if not self.MODELS_DIR.exists():
+            # Buat folder jika belum ada agar tidak error saat write nanti
+            self.MODELS_DIR.mkdir(parents=True, exist_ok=True)
+            print(f"[INFO] Folder models dibuat: {self.MODELS_DIR}")
+            return str(self.MODELS_DIR / "model.gguf")
+        
+        # 2. Cari semua file .gguf
+        gguf_files = list(self.MODELS_DIR.glob("*.gguf"))
+        
+        if not gguf_files:
+            print(f"[WARNING] Tidak ada model GGUF ditemukan di {self.MODELS_DIR}")
+            print("[INFO] Silakan download model GGUF dan simpan di folder tersebut.")
+            return str(self.MODELS_DIR / "model.gguf")
+        
+        # 3. Urutkan berdasarkan nama file (konsisten)
+        gguf_files.sort()
+        
+        # 4. Pilih model pertama
+        selected_model = gguf_files[0]
+        print(f"[INFO] Model terdeteksi otomatis: {selected_model.name}")
+        
+        return str(selected_model)
+
+    def _load_environment(self):
+        """Load konfigurasi dari environment variables atau gunakan default."""
+        # ... (kode load env lainnya) ...
+        
+        # Gunakan auto-detect jika MODEL_PATH tidak diset di .env
+        env_model_path = os.getenv("MODEL_PATH")
+        if env_model_path and env_model_path.strip():
+            self.MODEL_PATH = env_model_path.strip()
+        else:
+            # Trigger auto-detection
+            self.MODEL_PATH = self._auto_detect_model()
+        
     def get(self, key: str, default=None):
         """Get konfigurasi dengan dot notation"""
         keys = key.split('.')

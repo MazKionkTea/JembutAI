@@ -28,7 +28,11 @@ class Retriever:
         """
         # STATUS: OK - Constructor berjalan normal
         self.client = chroma_client
-        self.collection = self.client.get_collection(collection_name)
+        try:
+            self.collection = self.client.get_collection(collection_name)
+        except ValueError:
+        # Create collection if not exists
+            self.collection = self.client.create_collection(collection_name)
         self.embedder = embedder or Embedder(verbose=verbose)
         self.verbose = verbose
         

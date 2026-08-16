@@ -3,7 +3,6 @@
 LLM Loader - Memuat dan mengelola model GGUF menggunakan llama-cpp-python
 """
 
-import os                                     # os - operasi sistem (tidak terpakai di kode ini, bisa dihapus)
 from typing import Optional     # typing.Optional - untuk type hint, menandakan parameter boleh None
 from pathlib import Path           # pathlib.Path - manipulasi path file secara OOP
 
@@ -11,11 +10,11 @@ from pathlib import Path           # pathlib.Path - manipulasi path file secara 
 class LLMLoader:                        # Membungkus semua fungsi loader dalam satu class.
     """Loader untuk model GGUF lokal"""
     
-    def __init__(                               # Constructois_runningr class. Parameter:
+    def __init__(                               # Constructor class. Parameter:
         self,
-        model_path: str = "models/deepseek-v4.gguf",        # model_path: lokasi file model (default DeepSeek-V4)
+        model_path: str = "models/Huihui-Qwen3.5-0.8B-abliterated.Q4_K_M.gguf",        # model_path: lokasi file model (default DeepSeek-V4)
         n_ctx: int = 8192,                                                          # n_ctx: panjang konteks yang bisa diproses (8192 token)
-        n_gpu_layers: int = -1,                                                 # n_gpu_layers: -1 artinya pindahkan semua layer ke GPU
+        n_gpu_layers: int = 0,                                                 # n_gpu_layers: -1 artinya pindahkan semua layer ke GPU
         n_threads: Optional[int] = None,                                # n_threads: jumlah thread CPU (None = biarkan llama.cpp menentukan)
         verbose: bool = False                                                  # verbose: cetak log atau tidak
     ):

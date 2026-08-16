@@ -1,0 +1,22 @@
+# AI Agent Framework - Requirements
+# Python 3.12+ required
+
+# LLM Inference (llama.cpp backend)
+llama-cpp-python>=0.2.90
+
+# RAG - Vector Database
+chromadb>=0.4.22
+
+# Web Framework (untuk web UI di web/app.py)
+flask>=3.0.0
+flask-cors>=4.0.0
+
+# Environment Variables Management
+python-dotenv>=1.0.0
+
+# Optional: Testing & Development
+# pytest>=7.4.0
+# pytest-cov>=4.1.0
+# black>=23.0.0
+# flake8>=6.1.0
+# mypy>=1.8.0

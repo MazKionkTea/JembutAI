@@ -71,9 +71,9 @@ class AgentAI:
         Proses pertanyaan user secara sinkron
         Args:
             pertanyaan: Pertanyaan user
-            stream: Jika True, streaming response ke console
+            stream: Jika True, streaming respon ke console
         Returns:
-            Dict dengan response, tool_used, metadata
+            Dict dengan respon, tool_used, metadata
         """
         # STATUS: OK - Method berjalan normal
         # VALIDASI
@@ -140,9 +140,9 @@ class AgentAI:
                     # Tambahkan error ke context
                     self.konteks.tambahkan_ke_konteks('tool', f"Error: {error_msg}")
                     
-                    # Lanjutkan dengan response error
+                    # Lanjutkan dengan respon error
                     return {
-                        'response': f"Maaf, terjadi error saat menjalankan tool: {error_msg}",
+                        'respon': f"Maaf, terjadi error saat menjalankan tool: {error_msg}",
                         'tool_used': tool_name,
                         'success': False,
                         'error': error_msg,
@@ -151,7 +151,7 @@ class AgentAI:
                         'latency': time.time() - waktu_dimulai
                     }
             
-            # STEP 4: Generate response
+            # STEP 4: Generate respon
             self.konteks.status_konteks_agen(StatusAgen.RESPONDING)
             
             if stream and self.llm:
@@ -166,7 +166,7 @@ class AgentAI:
             # self.konteks.status_konteks_terakhir(str(e))
             self.konteks.pesan_error(str(e))            
             return {
-                'response': f"Maaf, terjadi error: {str(e)}",
+                'respon': f"Maaf, terjadi error: {str(e)}",
                 'tool_used': None,
                 'success': False,
                 'error': str(e),

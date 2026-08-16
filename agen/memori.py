@@ -224,49 +224,64 @@ class PengelolaMemori:
     ) -> List[Dict[str, Any]]:
         """
         Ambil history percakapan
-        
+
         Args:
             limit: Jumlah pesan terakhir (None = semua)
             session_id: Session ID (None = pakai current)
-        
+
         Returns:
-            List pesan dalam format [{'role': ..., 'content': ..., 'timestamp': ...}]
+            List pesan dalam format [{'role': ..., 'content': ..., 'timestamp': ..., 'tokens': ...}]
         """
         # STATUS: OK - Method berjalan normal
         sesi = identitas_sesi or self.identitas_sesi_saat_ini
-        
+
         if sesi is None:
             print("[ERROR] No active session")
             return []
-        
+
+        # Validasi limit
+        limit_int = None
+        if limit is not None:
+            try:
+                limit_int = int(limit)
+                if limit_int < 1 or limit_int > 1000:
+                    raise ValueError("Limit harus antara 1-1000")
+            except (ValueError, TypeError) as e:
+                if self.verbose:
+                    print(f"[WARNING] Invalid limit value: {limit}, using default 50")
+                limit_int = 50
+
         try:
             koneksi = sqlite3.connect(str(self.lokasi_database))
             koneksi.row_factory = sqlite3.Row
             cursor = koneksi.cursor()
-            
-            query = """
-                SELECT role, content, timestamp, tokens
-                FROM messages
-                WHERE session_id = ?
-                ORDER BY timestamp ASC
-            """
-            
-            if limit:
-                # Ambil last N, dengan subquery agar urutan tetap ascending
-                query = f"""
+
+            # Bangun query dengan parameterized placeholders
+            if limit_int is None:
+                query = """
+                    SELECT role, content, timestamp, tokens
+                    FROM messages
+                    WHERE session_id = ?
+                    ORDER BY timestamp ASC
+                """
+                params = (sesi,)
+            else:
+                # Ambil last N dengan subquery agar urutan tetap ascending
+                query = """
                     SELECT * FROM (
                         SELECT role, content, timestamp, tokens
                         FROM messages
                         WHERE session_id = ?
                         ORDER BY timestamp DESC
-                        LIMIT {limit}
+                        LIMIT ?
                     ) ORDER BY timestamp ASC
                 """
-            
-            cursor.execute(query, (sesi,))
+                params = (sesi, limit_int)
+
+            cursor.execute(query, params)
             rows = cursor.fetchall()
             koneksi.close()
-            
+
             histori = [
                 {
                     'role': row['role'],
@@ -276,16 +291,16 @@ class PengelolaMemori:
                 }
                 for row in rows
             ]
-            
+
             if self.verbose:
                 print(f"[DEBUG] Retrieved {len(histori)} messages from history")
-            
+
             return histori
-            
+
         except sqlite3.Error as e:
             print(f"[ERROR] Failed to get history: {e}")
             return []
-
+            
     def ambil_pesan_terakhir(self, n: int = 5) -> List[Dict[str, Any]]:
         """
         Ambil N pesan terakhir
