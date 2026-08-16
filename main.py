@@ -9,7 +9,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent))
 
-from konfigurasi.configurasi import konfigurasi as config
+from konfigurasi.konfigurasi import konfigurasi
 from llm.loader import LLMLoader
 from llm.inference import InferenceEngine
 from llm.prompt import PromptTemplates
