@@ -7,7 +7,11 @@ import time
 from typing import List, Optional, Union
 from pathlib import Path
 
-from llama_cpp import Llama
+try:
+    from llama_cpp import Llama
+    HAS_LLAMA = True
+except ImportError:
+    HAS_LLAMA = False
 
 
 class Embedder:
