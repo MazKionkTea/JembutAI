@@ -186,7 +186,7 @@ class WebAIAssistant:
     def _init_rag(self):
         """Inisialisasi RAG"""
         try:
-            embed_model_path = config.MODELS_DIR / "models/nomic-embed-text-v2-moe.Q5_K_M.gguf"
+            embed_model_path = config.MODELS_DIR / "nomic-embed-text-v2-moe.Q5_K_M.gguf"
             
             if embed_model_path.exists():
                 self.embedder = Embedder(
